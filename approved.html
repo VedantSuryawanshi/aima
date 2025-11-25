@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Parking - Approved Entries Slideshow</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #2dd4bf 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(20, 184, 166, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(45, 212, 191, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .slideshow-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .slide {
+            display: none;
+            width: 100%;
+            height: 100%;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .slide-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            padding: 60px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .slide-image {
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 20px;
+            margin: 0 auto 40px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            border: 5px solid #14b8a6;
+        }
+
+        .slide-name {
+            font-size: 56px;
+            font-weight: 700;
+            color: #0f766e;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .slide-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 20px;
+            box-shadow: 0 8px 25px rgba(20, 184, 166, 0.4);
+        }
+
+        .header-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 30px;
+            background: rgba(15, 118, 110, 0.9);
+            color: white;
+            text-align: center;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-overlay h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header-overlay p {
+            font-size: 20px;
+            opacity: 0.9;
+        }
+
+        .counter {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #0f766e;
+            z-index: 10;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: white;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .empty-state h1 {
+            font-size: 64px;
+            margin-bottom: 30px;
+        }
+
+        .empty-state p {
+            font-size: 32px;
+            opacity: 0.9;
+        }
+
+        .logo-overlay {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            z-index: 10;
+        }
+
+        .logo-overlay img {
+            max-width: 200px;
+            height: auto;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
+        }
+
+        @media (max-width: 768px) {
+            .slide-content {
+                padding: 40px 30px;
+            }
+
+            .slide-name {
+                font-size: 36px;
+            }
+
+            .slide-image {
+                height: 300px;
+            }
+
+            .header-overlay h1 {
+                font-size: 28px;
+            }
+
+            .header-overlay p {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-overlay">
+        <img src="AIMA-RISE Logo_White.png" alt="AIMA RISE Logo" onerror="this.style.display='none'">
+    </div>
+
+    <div class="header-overlay">
+        <h1>⚡ Free EV Parking</h1>
+        <p>Celebrating Sustainable Transportation</p>
+    </div>
+
+    <div class="counter" id="counter">1 / 0</div>
+
+    <div class="slideshow-container" id="slideshowContainer">
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <h1>🌱</h1>
+            <p>No approved entries yet.<br>Check back soon!</p>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        // Initialize Supabase
+        if (!initSupabase()) {
+            console.error('Supabase library not loaded. Make sure the Supabase CDN script is loaded before config.js');
+        }
+
+        let approvedSubmissions = [];
+        let currentSlideIndex = 0;
+        let slideshowInterval;
+
+        async function loadApprovedSubmissions() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('submissions')
+                    .select('*')
+                    .eq('status', 'approved')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    throw error;
+                }
+
+                approvedSubmissions = data || [];
+
+                if (approvedSubmissions.length === 0) {
+                    document.getElementById('emptyState').style.display = 'flex';
+                    document.getElementById('slideshowContainer').innerHTML = '';
+                    document.getElementById('counter').textContent = '0 / 0';
+                    return;
+                }
+
+                document.getElementById('emptyState').style.display = 'none';
+                renderSlides();
+                startSlideshow();
+            } catch (error) {
+                console.error('Error loading approved submissions:', error);
+                document.getElementById('emptyState').style.display = 'flex';
+                document.getElementById('emptyState').innerHTML = `
+                    <h1>⚠️</h1>
+                    <p>Error loading submissions</p>
+                `;
+            }
+        }
+
+        function renderSlides() {
+            const container = document.getElementById('slideshowContainer');
+            container.innerHTML = approvedSubmissions.map((sub, index) => `
+                <div class="slide ${index === 0 ? 'active' : ''}">
+                    <div class="slide-content">
+                        <img src="${sub.photo_url || ''}" 
+                             alt="${sub.name || 'EV Owner'}" 
+                             class="slide-image"
+                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'600\' height=\'400\'%3E%3Crect fill=\'%23e0e0e0\' width=\'600\' height=\'400\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'24\' dy=\'10.5\' font-weight=\'bold\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\'%3ENo Image%3C/text%3E%3C/svg%3E'">
+                        <div class="slide-name">${sub.name || 'EV Owner'}</div>
+                        <div class="slide-badge">🌱 Free EV Parking Awarded</div>
+                    </div>
+                </div>
+            `).join('');
+
+            updateCounter();
+        }
+
+        function startSlideshow() {
+            if (approvedSubmissions.length === 0) return;
+
+            // Clear existing interval
+            if (slideshowInterval) {
+                clearInterval(slideshowInterval);
+            }
+
+            // Change slide every 5 seconds
+            slideshowInterval = setInterval(() => {
+                nextSlide();
+            }, 5000);
+        }
+
+        function nextSlide() {
+            if (approvedSubmissions.length === 0) return;
+
+            const slides = document.querySelectorAll('.slide');
+            slides[currentSlideIndex].classList.remove('active');
+
+            currentSlideIndex = (currentSlideIndex + 1) % approvedSubmissions.length;
+
+            slides[currentSlideIndex].classList.add('active');
+            updateCounter();
+        }
+
+        function updateCounter() {
+            document.getElementById('counter').textContent = 
+                `${currentSlideIndex + 1} / ${approvedSubmissions.length}`;
+        }
+
+        // Load submissions on page load
+        loadApprovedSubmissions();
+
+        // Refresh every 30 seconds to get new approvals
+        setInterval(loadApprovedSubmissions, 30000);
+
+        // Keyboard navigation for manual control (optional)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                if (approvedSubmissions.length === 0) return;
+                const slides = document.querySelectorAll('.slide');
+                slides[currentSlideIndex].classList.remove('active');
+                currentSlideIndex = (currentSlideIndex - 1 + approvedSubmissions.length) % approvedSubmissions.length;
+                slides[currentSlideIndex].classList.add('active');
+                updateCounter();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free EV Parking - AIMA RISE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #2dd4bf 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(20, 184, 166, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(45, 212, 191, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 50px 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-container {
+            margin-bottom: 20px;
+        }
+
+        .logo-container img {
+            max-width: 200px;
+            height: auto;
+        }
+
+        h1 {
+            color: #0f766e;
+            margin-bottom: 15px;
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #14b8a6;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .description {
+            color: #666;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-top: 15px;
+        }
+
+        .ev-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #0f766e;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        label::after {
+            content: ' *';
+            color: #14b8a6;
+        }
+
+        input[type="text"],
+        input[type="tel"] {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: #f9fafb;
+        }
+
+        input[type="text"]:focus,
+        input[type="tel"]:focus {
+            outline: none;
+            border-color: #14b8a6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #14b8a6;
+            border-radius: 10px;
+            cursor: pointer;
+            background: #f0fdfa;
+            transition: all 0.3s;
+        }
+
+        input[type="file"]:hover {
+            background: #ccfbf1;
+            border-color: #0f766e;
+        }
+
+        .image-preview {
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 350px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border: 3px solid #14b8a6;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 6px 20px rgba(15, 118, 110, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(15, 118, 110, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 25px;
+            text-align: center;
+            display: none;
+            font-weight: 600;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 25px;
+            text-align: center;
+            display: none;
+            font-weight: 600;
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .sustainability-note {
+            background: #f0fdfa;
+            border-left: 4px solid #14b8a6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 30px;
+            color: #0f766e;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .sustainability-note strong {
+            color: #0d9488;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .subtitle {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-section">
+            <div class="logo-container">
+                <img src="AIMA-RISE Logo_Black.png" alt="AIMA RISE Logo" onerror="this.style.display='none'">
+            </div>
+            <h1>⚡ Free EV Parking</h1>
+            <p class="subtitle">Drive Green, Park Free</p>
+            <div class="ev-badge">🌱 Sustainable Transportation Initiative</div>
+            <p class="description">
+                Join our sustainability movement! Electric vehicle owners get free parking. 
+                Submit your details and photo to claim your spot.
+            </p>
+        </div>
+
+        <form id="submissionForm">
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" required placeholder="Enter your full name">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" required placeholder="+91 12345 67890">
+            </div>
+
+            <div class="form-group">
+                <label for="vehicle">EV Vehicle Number</label>
+                <input type="text" id="vehicle" name="vehicle" required placeholder="MH-15-AB-1234">
+            </div>
+
+            <div class="form-group">
+                <label for="photo">Upload Photo with Your EV</label>
+                <input type="file" id="photo" name="photo" accept="image/*" required>
+                <div class="image-preview" id="imagePreview">
+                    <img id="previewImg" src="" alt="Preview">
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                Submit for Free Parking
+            </button>
+        </form>
+
+        <div class="success-message" id="successMessage">
+            ✓ Success! Your submission has been received. Our team will review it shortly.
+        </div>
+
+        <div class="error-message" id="errorMessage">
+            Please fill in all fields and upload an image.
+        </div>
+
+        <div class="sustainability-note">
+            <strong>🌍 Making a Difference:</strong> By choosing electric vehicles, you're contributing to 
+            cleaner air, reduced carbon emissions, and a more sustainable future. Thank you for being part 
+            of the green revolution!
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        // Initialize Supabase
+        if (!initSupabase()) {
+            console.error('Supabase library not loaded. Make sure the Supabase CDN script is loaded before config.js');
+        }
+
+        // Image preview
+        document.getElementById('photo').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('imagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Form submission
+        document.getElementById('submissionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const vehicle = document.getElementById('vehicle').value.trim();
+            const photoFile = document.getElementById('photo').files[0];
+            const submitBtn = document.getElementById('submitBtn');
+            const successMsg = document.getElementById('successMessage');
+            const errorMsg = document.getElementById('errorMessage');
+
+            // Hide previous messages
+            successMsg.style.display = 'none';
+            errorMsg.style.display = 'none';
+
+            if (!name || !phone || !vehicle || !photoFile) {
+                errorMsg.textContent = 'Please fill in all fields and upload an image.';
+                errorMsg.style.display = 'block';
+                setTimeout(() => {
+                    errorMsg.style.display = 'none';
+                }, 5000);
+                return;
+            }
+
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                // Upload photo to Supabase Storage
+                const fileExt = photoFile.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                const filePath = `submissions/${fileName}`;
+
+                // Upload file
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('ev-parking-photos')
+                    .upload(filePath, photoFile);
+
+                if (uploadError) {
+                    throw uploadError;
+                }
+
+                // Get public URL
+                const { data: urlData } = supabaseClient.storage
+                    .from('ev-parking-photos')
+                    .getPublicUrl(filePath);
+
+                const photoUrl = urlData.publicUrl;
+
+                // Insert submission into database
+                const { data, error } = await supabaseClient
+                    .from('submissions')
+                    .insert([
+                        {
+                            name: name,
+                            phone: phone,
+                            vehicle_number: vehicle,
+                            photo_url: photoUrl,
+                            status: 'pending',
+                            created_at: new Date().toISOString()
+                        }
+                    ])
+                    .select();
+
+                if (error) {
+                    throw error;
+                }
+
+                // Success
+                successMsg.style.display = 'block';
+                document.getElementById('submissionForm').reset();
+                document.getElementById('imagePreview').style.display = 'none';
+
+                setTimeout(() => {
+                    successMsg.style.display = 'none';
+                }, 8000);
+
+            } catch (error) {
+                console.error('Error submitting:', error);
+                errorMsg.textContent = `Error: ${error.message || 'Failed to submit. Please try again.'}`;
+                errorMsg.style.display = 'block';
+                setTimeout(() => {
+                    errorMsg.style.display = 'none';
+                }, 5000);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit for Free Parking';
+            }
+        });
+    </script>
+</body>
+</html>
