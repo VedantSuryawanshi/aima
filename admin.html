@@ -188,7 +188,7 @@
             margin-top: 15px;
         }
 
-        .approve-btn, .reject-btn {
+        .approve-btn, .reject-btn, .delete-btn, .reapprove-btn {
             flex: 1;
             padding: 10px;
             border: none;
@@ -214,6 +214,24 @@
 
         .reject-btn:hover {
             background: #da190b;
+        }
+
+        .delete-btn {
+            background: #1f2937;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background: #111827;
+        }
+
+        .reapprove-btn {
+            background: #0ea5e9;
+            color: white;
+        }
+
+        .reapprove-btn:hover {
+            background: #0284c7;
         }
 
         .no-submissions {
@@ -386,7 +404,33 @@
                 return;
             }
 
-            grid.innerHTML = filtered.map(sub => `
+            grid.innerHTML = filtered.map(sub => {
+                let actionButtons = '';
+
+                if (sub.status === 'pending') {
+                    actionButtons = `
+                        <div class="card-actions">
+                            <button class="approve-btn" onclick="updateStatus('${sub.id}', 'approved')">Approve</button>
+                            <button class="reject-btn" onclick="updateStatus('${sub.id}', 'rejected')">Reject</button>
+                        </div>
+                    `;
+                } else if (sub.status === 'approved') {
+                    actionButtons = `
+                        <div class="card-actions">
+                            <button class="reject-btn" onclick="updateStatus('${sub.id}', 'rejected')">Disable Access</button>
+                            <button class="delete-btn" onclick="deleteSubmission('${sub.id}')">Remove</button>
+                        </div>
+                    `;
+                } else if (sub.status === 'rejected') {
+                    actionButtons = `
+                        <div class="card-actions">
+                            <button class="reapprove-btn" onclick="updateStatus('${sub.id}', 'approved')">Re-Approve</button>
+                            <button class="delete-btn" onclick="deleteSubmission('${sub.id}')">Remove</button>
+                        </div>
+                    `;
+                }
+
+                return `
                 <div class="submission-card">
                     <img src="${sub.photo_url || ''}" alt="Photo" class="card-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'200\'%3E%3Crect fill=\'%23ddd\' width=\'400\' height=\'200\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'18\' dy=\'10.5\' font-weight=\'bold\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\'%3ENo Image%3C/text%3E%3C/svg%3E'">
                     <div class="card-content">
@@ -403,16 +447,12 @@
                             <span class="card-value">${sub.vehicle_number || 'N/A'}</span>
                         </div>
                         <div class="timestamp">Submitted: ${new Date(sub.created_at).toLocaleString()}</div>
-                        <span class="status-badge status-${sub.status}">${sub.status.toUpperCase()}</span>
-                        ${sub.status === 'pending' ? `
-                            <div class="card-actions">
-                                <button class="approve-btn" onclick="updateStatus('${sub.id}', 'approved')">Approve</button>
-                                <button class="reject-btn" onclick="updateStatus('${sub.id}', 'rejected')">Reject</button>
-                            </div>
-                        ` : ''}
+                        <span class="status-badge status-${sub.status}">${sub.status === 'rejected' ? 'DISABLED' : sub.status.toUpperCase()}</span>
+                        ${actionButtons}
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         async function updateStatus(id, newStatus) {
@@ -431,6 +471,28 @@
             } catch (error) {
                 console.error('Error updating status:', error);
                 alert(`Error updating status: ${error.message}`);
+            }
+        }
+
+        async function deleteSubmission(id) {
+            if (!confirm('Are you sure you want to remove this entry? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('submissions')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    throw error;
+                }
+
+                await loadSubmissions();
+            } catch (error) {
+                console.error('Error deleting submission:', error);
+                alert(`Error deleting submission: ${error.message}`);
             }
         }
 
