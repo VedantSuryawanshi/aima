@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free EV Parking - AIMA RISE</title>
+    <title>Claim Priority Parking and Free Entry - AIMA RISE</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
@@ -227,6 +227,88 @@
             color: #0d9488;
         }
 
+        .terms-section {
+            background: #fff7ed;
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            margin-bottom: 25px;
+        }
+
+        .terms-title {
+            color: #0f766e;
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .terms-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .terms-list li {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.8;
+            margin-bottom: 10px;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .terms-list li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #14b8a6;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .terms-checkbox {
+            margin-top: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .terms-checkbox input[type="checkbox"] {
+            margin-top: 4px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #14b8a6;
+        }
+
+        .terms-checkbox label {
+            color: #333;
+            font-size: 14px;
+            line-height: 1.6;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .terms-checkbox label::after {
+            content: '';
+        }
+
+        .validation-error {
+            color: #ef4444;
+            font-size: 13px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        input.error {
+            border-color: #ef4444 !important;
+            background: #fef2f2 !important;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 30px 20px;
@@ -248,11 +330,11 @@
             <div class="logo-container">
                 <img src="AIMA-RISE Logo_Black.png" alt="AIMA RISE Logo" onerror="this.style.display='none'">
             </div>
-            <h1>⚡ Free EV Parking</h1>
+            <h1>⚡ Claim Priority Parking and Free Entry</h1>
             <p class="subtitle">Drive Green, Park Free</p>
             <div class="ev-badge">🌱 Sustainable Transportation Initiative</div>
             <p class="description">
-                Join our sustainability movement! Electric vehicle owners get free parking. 
+                Join our sustainability movement! Electric vehicle owners get priority parking and free entry. 
                 Submit your details and photo to claim your spot.
             </p>
         </div>
@@ -265,12 +347,15 @@
 
             <div class="form-group">
                 <label for="phone">Phone Number</label>
-                <input type="tel" id="phone" name="phone" required placeholder="+91 12345 67890">
+                <input type="tel" id="phone" name="phone" required placeholder="1234567890" maxlength="10" pattern="[0-9]{10}">
+                <div class="validation-error" id="phoneError">Please enter a valid 10-digit phone number</div>
+                <div class="validation-error" id="phoneDuplicateError">This phone number has already been registered. Only one free entry per phone number.</div>
             </div>
 
             <div class="form-group">
                 <label for="vehicle">EV Vehicle Number</label>
                 <input type="text" id="vehicle" name="vehicle" required placeholder="MH-15-AB-1234">
+                <div class="validation-error" id="vehicleError">This vehicle number has already been registered</div>
             </div>
 
             <div class="form-group">
@@ -281,13 +366,29 @@
                 </div>
             </div>
 
+            <div class="terms-section">
+                <div class="terms-title">📋 Terms & Conditions</div>
+                <ul class="terms-list">
+                    <li>Priority parking only on first come first serve basis. No guarantee.</li>
+                    <li>If misuse or wrong entry is found, free entry will be cancelled.</li>
+                    <li>1 car, 1 free entry ticket only. No multiple free entries for a given number.</li>
+                    <li>1 car cannot claim multiple free entries on each day.</li>
+                    <li>AIMA team deserves the right to revoke this privilege without any prior notice.</li>
+                    <li>AIMA team decisions, in case of conflict will be final and binding.</li>
+                </ul>
+                <div class="terms-checkbox">
+                    <input type="checkbox" id="termsAccepted" required>
+                    <label for="termsAccepted">I have read and agree to all the terms and conditions mentioned above</label>
+                </div>
+            </div>
+
             <button type="submit" class="submit-btn" id="submitBtn">
-                Submit for Free Parking
+                Priority Parking and Free Entry
             </button>
         </form>
 
         <div class="success-message" id="successMessage">
-            ✓ Success! Your submission has been received. Our team will review it shortly.
+            ✓ Success! Your request for priority parking and free entry has been received. Our team will review it shortly.
         </div>
 
         <div class="error-message" id="errorMessage">
@@ -307,6 +408,95 @@
         if (!initSupabase()) {
             console.error('Supabase library not loaded. Make sure the Supabase CDN script is loaded before config.js');
         }
+
+        // Phone number validation (10 digits only)
+        const phoneInput = document.getElementById('phone');
+        const phoneError = document.getElementById('phoneError');
+        const phoneDuplicateError = document.getElementById('phoneDuplicateError');
+        let phoneCheckTimeout;
+        
+        phoneInput.addEventListener('input', function(e) {
+            // Remove any non-digit characters
+            let value = e.target.value.replace(/\D/g, '');
+            e.target.value = value;
+            
+            // Hide duplicate error when typing
+            phoneDuplicateError.style.display = 'none';
+            
+            // Validate 10 digits
+            if (value.length > 0 && value.length !== 10) {
+                phoneInput.classList.add('error');
+                phoneError.style.display = 'block';
+            } else {
+                phoneInput.classList.remove('error');
+                phoneError.style.display = 'none';
+                
+                // Check for duplicate phone number if 10 digits
+                if (value.length === 10) {
+                    clearTimeout(phoneCheckTimeout);
+                    phoneCheckTimeout = setTimeout(async () => {
+                        try {
+                            const { data, error } = await supabaseClient
+                                .from('submissions')
+                                .select('id')
+                                .eq('phone', value)
+                                .limit(1);
+
+                            if (error) throw error;
+
+                            if (data && data.length > 0) {
+                                phoneInput.classList.add('error');
+                                phoneDuplicateError.style.display = 'block';
+                            } else {
+                                phoneInput.classList.remove('error');
+                                phoneDuplicateError.style.display = 'none';
+                            }
+                        } catch (error) {
+                            console.error('Error checking phone number:', error);
+                        }
+                    }, 500);
+                }
+            }
+        });
+
+        // Vehicle number duplicate check
+        const vehicleInput = document.getElementById('vehicle');
+        const vehicleError = document.getElementById('vehicleError');
+        let vehicleCheckTimeout;
+
+        vehicleInput.addEventListener('input', function(e) {
+            clearTimeout(vehicleCheckTimeout);
+            const vehicleNumber = e.target.value.trim().toUpperCase();
+            
+            if (vehicleNumber.length < 3) {
+                vehicleInput.classList.remove('error');
+                vehicleError.style.display = 'none';
+                return;
+            }
+
+            // Debounce the check
+            vehicleCheckTimeout = setTimeout(async () => {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('submissions')
+                        .select('id')
+                        .ilike('vehicle_number', vehicleNumber)
+                        .limit(1);
+
+                    if (error) throw error;
+
+                    if (data && data.length > 0) {
+                        vehicleInput.classList.add('error');
+                        vehicleError.style.display = 'block';
+                    } else {
+                        vehicleInput.classList.remove('error');
+                        vehicleError.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Error checking vehicle number:', error);
+                }
+            }, 500);
+        });
 
         // Image preview
         document.getElementById('photo').addEventListener('change', function(e) {
@@ -336,6 +526,85 @@
             // Hide previous messages
             successMsg.style.display = 'none';
             errorMsg.style.display = 'none';
+
+            // Validate terms acceptance
+            const termsAccepted = document.getElementById('termsAccepted').checked;
+            if (!termsAccepted) {
+                errorMsg.textContent = 'Please accept the terms and conditions to proceed.';
+                errorMsg.style.display = 'block';
+                setTimeout(() => {
+                    errorMsg.style.display = 'none';
+                }, 5000);
+                return;
+            }
+
+            // Validate phone number (10 digits)
+            const phoneDigits = phone.replace(/\D/g, '');
+            if (phoneDigits.length !== 10) {
+                phoneInput.classList.add('error');
+                phoneError.style.display = 'block';
+                errorMsg.textContent = 'Please enter a valid 10-digit phone number.';
+                errorMsg.style.display = 'block';
+                setTimeout(() => {
+                    errorMsg.style.display = 'none';
+                }, 5000);
+                return;
+            }
+
+            // Check for duplicate phone number
+            try {
+                const { data: existingPhone, error: phoneCheckError } = await supabaseClient
+                    .from('submissions')
+                    .select('id')
+                    .eq('phone', phoneDigits)
+                    .limit(1);
+
+                if (phoneCheckError) throw phoneCheckError;
+
+                if (existingPhone && existingPhone.length > 0) {
+                    phoneInput.classList.add('error');
+                    phoneDuplicateError.style.display = 'block';
+                    errorMsg.textContent = 'This phone number has already been registered. Only one free entry per phone number.';
+                    errorMsg.style.display = 'block';
+                    setTimeout(() => {
+                        errorMsg.style.display = 'none';
+                    }, 5000);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Priority Parking and Free Entry';
+                    return;
+                }
+            } catch (phoneCheckError) {
+                console.error('Error checking phone:', phoneCheckError);
+                // Continue with submission if check fails (network issue)
+            }
+
+            // Check for duplicate vehicle number
+            const vehicleUpper = vehicle.trim().toUpperCase();
+            try {
+                const { data: existingVehicle, error: checkError } = await supabaseClient
+                    .from('submissions')
+                    .select('id')
+                    .ilike('vehicle_number', vehicleUpper)
+                    .limit(1);
+
+                if (checkError) throw checkError;
+
+                if (existingVehicle && existingVehicle.length > 0) {
+                    vehicleInput.classList.add('error');
+                    vehicleError.style.display = 'block';
+                    errorMsg.textContent = 'This vehicle number has already been registered.';
+                    errorMsg.style.display = 'block';
+                    setTimeout(() => {
+                        errorMsg.style.display = 'none';
+                    }, 5000);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Priority Parking and Free Entry';
+                    return;
+                }
+            } catch (checkError) {
+                console.error('Error checking vehicle:', checkError);
+                // Continue with submission if check fails (network issue)
+            }
 
             if (!name || !phone || !vehicle || !photoFile) {
                 errorMsg.textContent = 'Please fill in all fields and upload an image.';
@@ -372,14 +641,14 @@
 
                 const photoUrl = urlData.publicUrl;
 
-                // Insert submission into database
+                // Insert submission into database (use normalized phone and vehicle)
                 const { data, error } = await supabaseClient
                     .from('submissions')
                     .insert([
                         {
                             name: name,
-                            phone: phone,
-                            vehicle_number: vehicle,
+                            phone: phoneDigits, // Store only digits
+                            vehicle_number: vehicleUpper, // Store uppercase
                             photo_url: photoUrl,
                             status: 'pending',
                             created_at: new Date().toISOString()
@@ -409,7 +678,7 @@
                 }, 5000);
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit for Free Parking';
+                submitBtn.textContent = 'Priority Parking and Free Entry';
             }
         });
     </script>

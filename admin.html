@@ -262,7 +262,6 @@
         <h2 style="margin-bottom: 20px; text-align: center;">Admin Login</h2>
         <input type="password" class="password-input" id="passwordInput" placeholder="Enter admin password">
         <button class="login-btn" onclick="login()">Login</button>
-        <p style="margin-top: 20px; text-align: center; color: #999;">Demo password: admin123</p>
         <div style="margin-top: 30px; text-align: center;">
             <a href="index.html" style="color: #14b8a6; text-decoration: none;">Back to Submission Form</a>
         </div>
@@ -358,13 +357,13 @@
 
                 allSubmissions = data || [];
 
-                // Update stats
+            // Update stats
                 document.getElementById('totalCount').textContent = allSubmissions.length;
                 document.getElementById('pendingCount').textContent = allSubmissions.filter(s => s.status === 'pending').length;
                 document.getElementById('approvedCount').textContent = allSubmissions.filter(s => s.status === 'approved').length;
                 document.getElementById('rejectedCount').textContent = allSubmissions.filter(s => s.status === 'rejected').length;
 
-                // Display submissions
+            // Display submissions
                 displaySubmissions(allSubmissions);
             } catch (error) {
                 console.error('Error loading submissions:', error);
@@ -450,8 +449,8 @@
         // Auto-refresh every 30 seconds
         setInterval(() => {
             if (document.getElementById('dashboard').style.display !== 'none') {
-                loadSubmissions();
-            }
+            loadSubmissions();
+        }
         }, 30000);
     </script>
 </body>
